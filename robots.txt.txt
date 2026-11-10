@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+
+# 비공개 영역 (관리자 / 회원 프로필 / 서버 API)
+Disallow: /admin
+Disallow: /me
+Disallow: /profile
+Disallow: /api/
+
+Sitemap: https://woong-space.vercel.app/sitemap.xml
