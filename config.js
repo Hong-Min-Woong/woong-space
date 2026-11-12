@@ -3,4 +3,5 @@ window.WS = {
   SUPABASE_URL: 'https://phzfyzkqsneansvmorjl.supabase.co',
   SUPABASE_ANON_KEY: 'sb_publishable_pRmgHUmnvpFL8PTP019xaQ_0yPKFiBH',
   KAKAO_CHANNEL: 'https://pf.kakao.com/_fmxoxeX/chat'
+  KAKAO_SCOPES: 'profile_nickname profile_image account_email',
 };
