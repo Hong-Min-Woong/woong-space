@@ -151,7 +151,18 @@ $('#f').onsubmit=async e=>{e.preventDefault();const f=e.target,er=$('#err'),b=f.
   f.reset();er.style.color='var(--gold)';er.textContent='상담 신청이 접수되었습니다. 빠르게 연락드리겠습니다.'}catch(x){er.textContent=x.message}b.disabled=false};
 
 /* [4] 로그인(카카오만) / 프로필 / 내 문의 / 관심 */
-const login=()=>sb.auth.signInWithOAuth({provider:'kakao',options:{redirectTo:location.origin+'/'}});
+const login=async()=>{
+  const { error } =
+    await sb.auth.signInWithOAuth({
+      provider:'kakao',
+      options:{
+        redirectTo:location.origin+'/',
+        scopes:'profile_nickname profile_image account_email'
+      }
+    });
+
+  if(error) alert('로그인 오류: '+error.message);
+};
 function authUI(){$('#auth').innerHTML=U?`<button class="chip" onclick="location.hash='#me'">${P?.avatar_url?`<img src="${esc(P.avatar_url)}" class="av" alt="">`:`<span class="av">${esc((P?.nickname||'회')[0])}</span>`}${esc(P?.nickname||'회원')}</button>`:`<button class="chip" onclick="location.hash='#me'">로그인</button>`;$('#adm').style.display=ADM?'':'none'}
 async function setUser(u){U=u||null;P=null;ADM=false;SAVED=new Set();
  if(U){const[p,a,s]=await Promise.all([sb.from('profiles').select('*').eq('id',U.id).maybeSingle(),sb.rpc('is_admin'),sb.from('saved_cases').select('case_id')]);P=p.data;ADM=a.data===true;SAVED=new Set((s.data||[]).map(x=>x.case_id))}
