@@ -268,6 +268,10 @@ $('#reviewList').onclick=async e=>{const b=e.target.closest('button');if(!b)retu
  else if(b.dataset.d&&confirm('삭제할까요?'))await sb.from('reviews').delete().eq('id',b.dataset.d);
  await loadReviews();fillReviews()};
 
+/* 안전장치: 관리자 화면에서 오류가 나면 검은 화면 대신 원인을 화면 상단에 표시 */
+const adErr=m=>{if(!$('#adminRoot').hidden)$('#adDiag').textContent='⚠ 오류: '+m};
+addEventListener('error',e=>adErr(e.message));addEventListener('unhandledrejection',e=>adErr(e.reason?.message||e.reason));
+
 /* [6] 확장 훅: 나중에 EXT.push({mount:'#ext-home',render:async()=>'<section>…</section>'}) 만 추가하면 됨
    예) 트렌드 카드, 쿠팡 파트너스, 네이버 기사, 뉴스. 각 항목은 새 테이블 + 새 render 함수로 독립 추가 */
 const EXT=[];const runExt=()=>EXT.forEach(async x=>{const m=$(x.mount);if(m)m.innerHTML=await x.render()});
@@ -278,6 +282,7 @@ function route(){const h=(location.hash||'#home').slice(1);let id=(h==='admin'||
  $('#adminRoot').hidden=id!=='admin';document.body.style.overflow=id==='admin'?'hidden':'';
  $$('.page').forEach(p=>p.classList.toggle('on',p.id===id));$$('nav a').forEach(a=>a.classList.toggle('on',a.hash==='#'+id));$('#nav').classList.remove('open');
  if(id==='me')drawMe();if(id==='admin')drawAdmin();if(h!=='feed')scrollTo(0,0)}
+if(location.pathname.replace(/\/+$/,'')==='/admin')history.replaceState(null,'','/#admin'); /* /admin 주소로 직접 접속해도 관리자 콘솔로 연결(권한 없으면 홈) */
 addEventListener('hashchange',route);$('#mb').onclick=()=>$('#nav').classList.toggle('open');
 (async function init(){if(OFF){authUI();route();return}
  const{data:{session}}=await sb.auth.getSession();await setUser(session?.user);
