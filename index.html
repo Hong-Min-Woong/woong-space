@@ -57,6 +57,7 @@ dialog{background:var(--bg);color:var(--tx);border:1px solid var(--line);border-
 .thumbs{display:flex;flex-wrap:wrap;gap:8px}.thumbs span{position:relative}.thumbs img{width:72px;height:72px;object-fit:cover;border-radius:6px}.thumbs button{position:absolute;top:-6px;right:-6px;background:var(--gold);border:0;border-radius:50%;width:20px;height:20px;cursor:pointer}
 .avl{width:56px;height:56px;border-radius:50%;object-fit:cover}.cfgbar{display:none}.ci{display:block;width:100%;aspect-ratio:4/3;object-fit:cover}
 [hidden]{display:none!important}
+.adpane{margin-top:36px;padding-top:28px;border-top:1px solid var(--line);scroll-margin-top:130px}#p-about{margin-top:8px;border-top:0;padding-top:0}#adtabs{position:sticky;top:calc(60px + env(safe-area-inset-top,0px));background:var(--bg);padding:10px 0;margin-bottom:0;z-index:5}
 </style></head><body>
 <noscript><h1>웅 Space | 턴키 인테리어</h1><p>아파트, 상가, 주택 인테리어 전문. 상담부터 시공, A/S까지 책임지는 웅 Space. 카카오톡 상담: https://pf.kakao.com/_fmxoxeX/chat</p></noscript>
 <header><div class="bar">
@@ -101,7 +102,7 @@ dialog{background:var(--bg);color:var(--tx);border:1px solid var(--line);border-
 <label>연혁 (한 줄에 하나: 연도|내용)<textarea name="history" rows="6" placeholder="2018|웅 Space 창업"></textarea></label>
 <div><button class="btn">저장</button></div><p id="am" class="sub"></p></form></div>
 
-<div class="adpane" id="p-cases" hidden><form id="cf" style="max-width:640px"><h3 id="ch">시공사례 등록</h3>
+<div class="adpane" id="p-cases"><form id="cf" style="max-width:640px"><h3 id="ch">시공사례 등록</h3>
 <label>제목<input name="title" required></label>
 <div class="row"><label>지역<input name="region" placeholder="창원시 성산구"></label><label>공사기간<input name="period" placeholder="4주"></label></div>
 <div class="row"><label>평형<input name="area" placeholder="32평"></label><label>공사 종류<select name="category"><option>아파트</option><option>주택/빌라</option><option>상가/매장</option><option>사무실</option></select></label></div>
@@ -112,12 +113,12 @@ dialog{background:var(--bg);color:var(--tx);border:1px solid var(--line);border-
 <div><button class="btn" id="cs">등록</button> <button type="button" class="btn ghost" id="cc" hidden>취소</button></div><p id="cm" class="sub"></p></form>
 <table style="margin-top:24px"><tbody id="cl"></tbody></table></div>
 
-<div class="adpane" id="p-notices" hidden><form id="nf" style="max-width:640px"><h3 id="nh">공지 작성</h3>
+<div class="adpane" id="p-notices"><form id="nf" style="max-width:640px"><h3 id="nh">공지 작성</h3>
 <label>제목<input name="title" required></label><label>내용<textarea name="body" rows="4"></textarea></label>
 <div><button class="btn" id="ns">등록</button> <button type="button" class="btn ghost" id="nc" hidden>취소</button></div></form>
 <table style="margin-top:24px"><tbody id="nl"></tbody></table></div>
 
-<div class="adpane" id="p-reviews" hidden><form id="rf" style="max-width:640px"><h3>후기 등록</h3>
+<div class="adpane" id="p-reviews"><form id="rf" style="max-width:640px"><h3>후기 등록</h3>
 <label>작성자 표기<input name="author" placeholder="32평 아파트 김○○"></label><label>후기 내용<textarea name="content" rows="3" required></textarea></label>
 <div><button class="btn">등록</button></div></form><table style="margin-top:24px"><tbody id="rl"></tbody></table></div>
 </section>
@@ -177,14 +178,14 @@ async function drawMe(){const b=$('#mebox'),iq=$('#inqbox'),sv=$('#savedbox');
 
 /* [5] 관리자 – 화면은 정적 HTML(#admin), 쓰기 권한은 DB의 RLS(is_admin)가 결정 */
 let AT='about',EC=null,EN=null,rm=new Set(),NL=[],RL=[];
-const show=t=>{AT=t;$$('[data-t]').forEach(b=>b.classList.toggle('on',b.dataset.t===t));$$('.adpane').forEach(p=>p.hidden=p.id!=='p-'+t)};
+const show=(t,go)=>{AT=t;$$('[data-t]').forEach(b=>b.classList.toggle('on',b.dataset.t===t));if(go)$('#p-'+t).scrollIntoView({behavior:'smooth',block:'start'})};
 const delImgs=a=>a.length&&sb.storage.from('cases').remove(a);
 async function up(file){const bm=await createImageBitmap(file),r=Math.min(1,1600/Math.max(bm.width,bm.height)),cv=document.createElement('canvas');cv.width=Math.round(bm.width*r);cv.height=Math.round(bm.height*r);cv.getContext('2d').drawImage(bm,0,0,cv.width,cv.height);
  const blob=await new Promise(o=>cv.toBlob(o,'image/webp',.82)),path=crypto.randomUUID()+'.webp';
  const{error}=await sb.storage.from('cases').upload(path,blob,{contentType:'image/webp',cacheControl:'31536000'});if(error)throw error;return path}
-async function drawAdmin(){show(AT);$('#adst').textContent='관리자 확인됨 · '+(U?.email||P?.nickname||U?.id||'');
+async function drawAdmin(){show(AT);if(AT!=='about')setTimeout(()=>$('#p-'+AT).scrollIntoView(),80);$('#adst').textContent='관리자 확인됨 · '+(U?.email||P?.nickname||U?.id||'')+' · 관리자 화면 v4 · 폼 '+$$('.adpane form').length+'개';
  try{fillAbout();fillCases();await Promise.all([fillNotices(),fillReviews()])}catch(e){$('#adst').textContent='관리자 화면 오류: '+(e.message||e)}}
-$('#adtabs').onclick=e=>{const b=e.target.closest('[data-t]');if(b)show(b.dataset.t)};
+$('#adtabs').onclick=e=>{const b=e.target.closest('[data-t]');if(b)show(b.dataset.t,true)};
 /* 회사소개 → site_content */
 function fillAbout(){const f=$('#af');['intro','greeting','philosophy','vision'].forEach(k=>f.elements[k].value=SITE[k]?.text||'');f.elements.history.value=(SITE.history?.items||[]).map(i=>i.year+'|'+i.text).join('\n')}
 $('#af').onsubmit=async e=>{e.preventDefault();const f=e.target,now=new Date().toISOString(),m=$('#am');m.textContent='저장 중…';
