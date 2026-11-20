@@ -57,7 +57,17 @@ dialog{background:var(--bg);color:var(--tx);border:1px solid var(--line);border-
 .thumbs{display:flex;flex-wrap:wrap;gap:8px}.thumbs span{position:relative}.thumbs img{width:72px;height:72px;object-fit:cover;border-radius:6px}.thumbs button{position:absolute;top:-6px;right:-6px;background:var(--gold);border:0;border-radius:50%;width:20px;height:20px;cursor:pointer}
 .avl{width:56px;height:56px;border-radius:50%;object-fit:cover}.cfgbar{display:none}.ci{display:block;width:100%;aspect-ratio:4/3;object-fit:cover}
 [hidden]{display:none!important}
-.adpane{margin-top:36px;padding-top:28px;border-top:1px solid var(--line);scroll-margin-top:130px}#adminAbout{margin-top:8px;border-top:0;padding-top:0}#adtabs{position:sticky;top:calc(60px + env(safe-area-inset-top,0px));background:var(--bg);padding:10px 0;margin-bottom:0;z-index:5}
+/* 관리자 콘솔 (독립 오버레이) */
+#adminRoot{position:fixed;inset:0;z-index:100;background:var(--bg);overflow:auto;padding:calc(18px + env(safe-area-inset-top,0px)) 20px calc(80px + env(safe-area-inset-bottom,0px))}
+#adminRoot[hidden]{display:none}.ad-wrap{max-width:720px;margin:0 auto}
+.ad-top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:8px}
+#adTabs{display:flex;flex-wrap:wrap;gap:8px;position:sticky;top:0;background:var(--bg);padding:10px 0;z-index:2;border-bottom:1px solid var(--line)}
+#adTabs button{background:none;border:1px solid var(--line);color:var(--mu);padding:8px 16px;border-radius:20px;cursor:pointer;font:14px 'Noto Sans KR',sans-serif}
+#adTabs button.on{border-color:var(--gold);color:var(--gold)}
+.ad-form{display:flex;flex-direction:column;gap:14px;margin-top:22px}.ad-form h3{margin:0}
+.ad-form label{display:flex;flex-direction:column;gap:6px;font-size:14px;color:var(--mu)}
+.ad-form input,.ad-form select,.ad-form textarea{display:block;width:100%;background:var(--bg2);border:1px solid var(--line);color:var(--tx);padding:11px;border-radius:2px;font:16px 'Noto Sans KR',sans-serif}
+.ad-msg{font-size:14px;color:var(--gold);margin:0}.ad-tbl{width:100%;border-collapse:collapse;font-size:14px;margin-top:28px}.ad-tbl td{padding:10px 8px;border-bottom:1px solid var(--line);vertical-align:top}
 </style></head><body>
 <noscript><h1>웅 Space | 턴키 인테리어</h1><p>아파트, 상가, 주택 인테리어 전문. 상담부터 시공, A/S까지 책임지는 웅 Space. 카카오톡 상담: https://pf.kakao.com/_fmxoxeX/chat</p></noscript>
 <header><div class="bar">
@@ -92,37 +102,46 @@ dialog{background:var(--bg);color:var(--tx);border:1px solid var(--line);border-
 
 <section class="page" id="me"><h2>내 프로필</h2><div class="rule"></div><div class="box" id="mebox"></div><div id="inqbox"></div><div id="savedbox"></div></section>
 
-<section class="page" id="admin"><h2>관리자</h2><div class="rule"></div>
-<p class="sub" id="adst">관리자 화면을 불러오는 중…</p>
-<div class="filters" id="adtabs"><button data-t="about" class="on">회사소개 관리</button><button data-t="cases">시공사례 관리</button><button data-t="notices">공지사항 관리</button><button data-t="reviews">후기 관리</button></div>
+</main>
+<div id="adminRoot" hidden><div class="ad-wrap">
+<div class="ad-top"><h2>관리자 콘솔</h2><button class="btn ghost" id="adClose" type="button">← 사이트로 돌아가기</button></div>
+<p class="sub" id="adDiag">관리자 콘솔을 불러오는 중…</p>
+<div id="adTabs"><button type="button" data-t="about" class="on">회사소개 관리</button><button type="button" data-t="cases">시공사례 관리</button><button type="button" data-t="notices">공지사항 관리</button><button type="button" data-t="reviews">후기 관리</button></div>
 
-<div class="adpane" id="adminAbout"><form id="af" style="max-width:640px"><h3>회사소개 관리</h3>
-<label>회사소개<textarea name="intro" rows="4"></textarea></label><label>대표 인사말<textarea name="greeting" rows="4"></textarea></label>
-<label>운영 철학<textarea name="philosophy" rows="3"></textarea></label><label>비전<textarea name="vision" rows="3"></textarea></label>
+<section id="adminAbout" style="display:block"><form id="aboutForm" class="ad-form"><h3>회사소개 관리</h3>
+<label>회사소개<textarea name="intro" rows="4"></textarea></label>
+<label>대표 인사말<textarea name="greeting" rows="4"></textarea></label>
+<label>운영철학<textarea name="philosophy" rows="3"></textarea></label>
+<label>비전<textarea name="vision" rows="3"></textarea></label>
 <label>연혁 (한 줄에 하나: 연도|내용)<textarea name="history" rows="6" placeholder="2018|웅 Space 창업"></textarea></label>
-<div><button class="btn">저장</button></div><p id="am" class="sub"></p></form></div>
+<div><button class="btn">저장</button></div><p class="ad-msg" id="aboutMsg"></p></form></section>
 
-<div class="adpane" id="adminCases"><form id="cf" style="max-width:640px"><h3 id="ch">시공사례 등록</h3>
+<section id="adminCases" style="display:none"><form id="caseForm" class="ad-form"><h3 id="caseHead">시공사례 등록</h3>
 <label>제목<input name="title" required></label>
-<div class="row"><label>지역<input name="region" placeholder="창원시 성산구"></label><label>공사기간<input name="period" placeholder="4주"></label></div>
-<div class="row"><label>평형<input name="area" placeholder="32평"></label><label>공사 종류<select name="category"><option>아파트</option><option>주택/빌라</option><option>상가/매장</option><option>사무실</option></select></label></div>
+<label>지역<input name="region" placeholder="창원시 성산구"></label>
+<label>공사기간<input name="period" placeholder="4주"></label>
+<label>평형 (선택)<input name="area" placeholder="32평"></label>
+<label>공사 종류<select name="category"><option>아파트</option><option>주택/빌라</option><option>상가/매장</option><option>사무실</option></select></label>
 <label>설명<textarea name="description" rows="4"></textarea></label>
 <label>대표 이미지 (수정 시 바꿀 때만 선택)<input type="file" name="cover" accept="image/*"></label>
 <label>상세 이미지 (여러 장 선택 가능)<input type="file" name="imgs" accept="image/*" multiple></label>
-<div class="thumbs" id="cth"></div>
-<div><button class="btn" id="cs">등록</button> <button type="button" class="btn ghost" id="cc" hidden>취소</button></div><p id="cm" class="sub"></p></form>
-<table style="margin-top:24px"><tbody id="cl"></tbody></table></div>
+<div class="thumbs" id="caseThumbs"></div>
+<div><button class="btn" id="caseSave">등록</button> <button type="button" class="btn ghost" id="caseCancel" style="display:none">취소</button></div><p class="ad-msg" id="caseMsg"></p></form>
+<table class="ad-tbl"><tbody id="caseList"></tbody></table></section>
 
-<div class="adpane" id="adminNotices"><form id="nf" style="max-width:640px"><h3 id="nh">공지 작성</h3>
-<label>제목<input name="title" required></label><label>내용<textarea name="body" rows="4"></textarea></label>
-<div><button class="btn" id="ns">등록</button> <button type="button" class="btn ghost" id="nc" hidden>취소</button></div></form>
-<table style="margin-top:24px"><tbody id="nl"></tbody></table></div>
+<section id="adminNotices" style="display:none"><form id="noticeForm" class="ad-form"><h3 id="noticeHead">공지 작성</h3>
+<label>제목<input name="title" required></label><label>내용<textarea name="body" rows="5"></textarea></label>
+<div><button class="btn" id="noticeSave">등록</button> <button type="button" class="btn ghost" id="noticeCancel" style="display:none">취소</button></div><p class="ad-msg" id="noticeMsg"></p></form>
+<table class="ad-tbl"><tbody id="noticeList"></tbody></table></section>
 
-<div class="adpane" id="adminReviews"><form id="rf" style="max-width:640px"><h3>후기 등록</h3>
-<label>작성자 표기<input name="author" placeholder="32평 아파트 김○○"></label><label>후기 내용<textarea name="content" rows="3" required></textarea></label>
-<div><button class="btn">등록</button></div></form><table style="margin-top:24px"><tbody id="rl"></tbody></table></div>
-</section>
-</main>
+<section id="adminReviews" style="display:none"><form id="reviewForm" class="ad-form"><h3>후기 작성</h3>
+<label>작성자명<input name="author" placeholder="32평 아파트 김○○" required></label>
+<label>별점<select name="rating"><option value="5">★★★★★ (5점)</option><option value="4">★★★★☆ (4점)</option><option value="3">★★★☆☆ (3점)</option><option value="2">★★☆☆☆ (2점)</option><option value="1">★☆☆☆☆ (1점)</option></select></label>
+<label>내용<textarea name="content" rows="4" required></textarea></label>
+<div><button class="btn">등록</button></div><p class="ad-msg" id="reviewMsg"></p></form>
+<table class="ad-tbl"><tbody id="reviewList"></tbody></table></section>
+</div></div>
+
 <dialog id="dlg"><div id="dlgc"></div></dialog>
 <a class="btn fab" id="fab" href="https://pf.kakao.com/_fmxoxeX/chat" target="_blank" rel="noopener">상담 예약</a>
 <footer>© 2026 웅 Space · 인테리어 턴키</footer>
@@ -142,7 +161,7 @@ const loadSite=async()=>{const{data}=await sb.from('site_content').select('*');S
 const loadNotices=async()=>{const{data}=await sb.from('notices').select('*').order('created_at',{ascending:false}).limit(5);NOT=data||[];
  $('#notices').innerHTML=NOT.map(n=>`<div class="nt-i"><span class="tag">${fd(n.created_at)}</span><b>${esc(n.title)}</b><p>${nl(n.body)}</p></div>`).join('')||'<p class="sub">등록된 공지가 없습니다.</p>'};
 const loadReviews=async()=>{const{data}=await sb.from('reviews').select('*').eq('visible',true).order('created_at',{ascending:false});
- $('#rvs').innerHTML=(data||[]).map(r=>`<blockquote>${nl(r.content)}<cite>— ${esc(r.author)}</cite></blockquote>`).join('')||'<p class="sub">후기가 곧 등록됩니다.</p>'};
+ $('#rvs').innerHTML=(data||[]).map(r=>`<blockquote><div style="color:var(--gold);letter-spacing:2px">${'★'.repeat(r.rating||5)}${'☆'.repeat(5-(r.rating||5))}</div>${nl(r.content)}<cite>— ${esc(r.author)}</cite></blockquote>`).join('')||'<p class="sub">후기가 곧 등록됩니다.</p>'};
 
 /* [3] 화면 */
 function drawAbout(){const t=k=>nl(SITE[k]?.text);$('#ab-intro').innerHTML=t('intro');$('#ab-greet').innerHTML=t('greeting');$('#ab-phil').innerHTML=t('philosophy');$('#ab-vision').innerHTML=t('vision');
@@ -176,58 +195,87 @@ async function drawMe(){const b=$('#mebox'),iq=$('#inqbox'),sv=$('#savedbox');
  $('#lo').onclick=async()=>{await sb.auth.signOut();setUser(null);location.hash='#home'};
  const L=CASES.filter(c=>SAVED.has(c.id));sv.innerHTML=`<h3 style="margin:40px 0 12px">관심 시공사례 <small style="color:var(--mu)">${L.length}</small></h3>`+(L.length?`<div class="grid">${L.map(card).join('')}</div>`:'<p class="sub">시공사례에서 ♡를 눌러 저장해 보세요.</p>')}
 
-/* [5] 관리자 – 화면은 정적 HTML(#admin), 쓰기 권한은 DB의 RLS(is_admin)가 결정 */
-let AT='about',EC=null,EN=null,rm=new Set(),NL=[],RL=[];
-const PANE={about:'#adminAbout',cases:'#adminCases',notices:'#adminNotices',reviews:'#adminReviews'};
-const show=(t,go)=>{AT=t;$$('[data-t]').forEach(b=>b.classList.toggle('on',b.dataset.t===t));if(go)$(PANE[t]).scrollIntoView({behavior:'smooth',block:'start'})};
+/* [5] 관리자 콘솔 — 처음부터 재작성 (v5)
+   · 독립 전체화면 오버레이(#adminRoot): 다른 페이지 CSS/구조와 섞이지 않음
+   · 화면 표시는 이 블록이 인라인 style로 직접 제어 (탭 전환 = showAdminTab)
+   · 쓰기 권한은 화면이 아니라 DB의 RLS(is_admin)가 최종 결정 */
+const ADMIN_TABS=['about','cases','notices','reviews'];
+const PANE={about:'adminAbout',cases:'adminCases',notices:'adminNotices',reviews:'adminReviews'};
+let AT='about',EC=null,EN=null,rmImgs=new Set(),NL=[],RL=[];
+const colErr=m=>/rating/.test(m||'')?' (SQL Editor에서 03_reviews_rating.sql 을 실행하세요)':'';
+
+function showAdminTab(tab){if(!ADMIN_TABS.includes(tab))tab='about';AT=tab;
+ ADMIN_TABS.forEach(t=>{$('#'+PANE[t]).style.display=t===tab?'block':'none'});
+ $$('#adTabs button').forEach(b=>b.classList.toggle('on',b.dataset.t===tab));
+ const h=$('#'+PANE[tab]).offsetHeight;
+ $('#adDiag').textContent=`관리자 확인됨 · ${U?.email||P?.nickname||''} · 관리자 콘솔 v5 · 탭 ${tab} · 폼 높이 ${h}px`+(h?'':' · ⚠ 폼이 보이지 않습니다');
+ $('#adminRoot').scrollTop=0}
+async function drawAdmin(){showAdminTab(AT);
+ try{fillAbout();fillCase();await Promise.all([fillNotices(),fillReviews()])}catch(e){$('#adDiag').textContent+=' · 오류: '+(e.message||e)}
+ showAdminTab(AT)}
+$('#adTabs').onclick=e=>{const b=e.target.closest('button[data-t]');if(b)showAdminTab(b.dataset.t)};
+$('#adClose').onclick=()=>{location.hash='#home'};
+
+/* ① 회사소개 → site_content (intro·greeting·philosophy·vision·history) */
+function fillAbout(){const e=$('#aboutForm').elements;['intro','greeting','philosophy','vision'].forEach(k=>e[k].value=SITE[k]?.text||'');e.history.value=(SITE.history?.items||[]).map(i=>i.year+'|'+i.text).join('\n')}
+$('#aboutForm').onsubmit=async ev=>{ev.preventDefault();const e=ev.target.elements,m=$('#aboutMsg'),now=new Date().toISOString();m.textContent='저장 중…';
+ const items=e.history.value.split('\n').map(l=>l.trim()).filter(Boolean).map(l=>{const[y,...r]=l.split('|');return{year:y.trim(),text:r.join('|').trim()}});
+ const rows=['intro','greeting','philosophy','vision'].map(k=>({key:k,value:{text:e[k].value.trim()},updated_at:now})).concat({key:'history',value:{items},updated_at:now});
+ const r=await sb.from('site_content').upsert(rows);m.textContent=r.error?'오류: '+r.error.message:'저장되었습니다. 회사소개 페이지에 반영되었습니다.';if(!r.error)loadSite()};
+
+/* ② 시공사례 → cases + Storage(cases) */
 const delImgs=a=>a.length&&sb.storage.from('cases').remove(a);
 async function up(file){const bm=await createImageBitmap(file),r=Math.min(1,1600/Math.max(bm.width,bm.height)),cv=document.createElement('canvas');cv.width=Math.round(bm.width*r);cv.height=Math.round(bm.height*r);cv.getContext('2d').drawImage(bm,0,0,cv.width,cv.height);
  const blob=await new Promise(o=>cv.toBlob(o,'image/webp',.82)),path=crypto.randomUUID()+'.webp';
  const{error}=await sb.storage.from('cases').upload(path,blob,{contentType:'image/webp',cacheControl:'31536000'});if(error)throw error;return path}
-async function drawAdmin(){show(AT);if(AT!=='about')setTimeout(()=>$(PANE[AT]).scrollIntoView(),80);$('#adst').textContent='관리자 확인됨 · '+(U?.email||P?.nickname||U?.id||'')+' · 관리자 화면 v4 · 폼 '+$$('.adpane form').length+'개';
- try{fillAbout();fillCases();await Promise.all([fillNotices(),fillReviews()])}catch(e){$('#adst').textContent='관리자 화면 오류: '+(e.message||e)}}
-$('#adtabs').onclick=e=>{const b=e.target.closest('[data-t]');if(b)show(b.dataset.t,true)};
-/* 회사소개 → site_content */
-function fillAbout(){const f=$('#af');['intro','greeting','philosophy','vision'].forEach(k=>f.elements[k].value=SITE[k]?.text||'');f.elements.history.value=(SITE.history?.items||[]).map(i=>i.year+'|'+i.text).join('\n')}
-$('#af').onsubmit=async e=>{e.preventDefault();const f=e.target,now=new Date().toISOString(),m=$('#am');m.textContent='저장 중…';
- const items=f.elements.history.value.split('\n').map(l=>l.trim()).filter(Boolean).map(l=>{const[y,...r]=l.split('|');return{year:y.trim(),text:r.join('|').trim()}});
- const rows=['intro','greeting','philosophy','vision'].map(k=>({key:k,value:{text:f.elements[k].value.trim()},updated_at:now})).concat({key:'history',value:{items},updated_at:now});
- const r=await sb.from('site_content').upsert(rows);m.textContent=r.error?'오류: '+r.error.message:'저장되었습니다. 회사소개 페이지에 반영되었습니다.';if(!r.error)loadSite()};
-/* 시공사례 → cases + Storage(cases) */
-function fillCases(){const f=$('#cf'),c=EC||{};['title','region','area','period','description'].forEach(k=>f.elements[k].value=c[k]||'');f.elements.category.value=c.category||'아파트';f.elements.cover.value='';f.elements.imgs.value='';rm=new Set();
- $('#ch').textContent=EC?'시공사례 수정':'시공사례 등록';$('#cs').textContent=EC?'수정 저장':'등록';$('#cc').hidden=!EC;
- $('#cth').innerHTML=(c.images||[]).map((x,i)=>`<span><img src="${img(x)}" alt=""><button type="button" data-rm="${i}">×</button></span>`).join('');
- $('#cl').innerHTML=CASES.map(x=>`<tr><td>${fd(x.created_at)}</td><td>${esc(x.title)}</td><td>${esc(x.category)}</td><td><button class="sb" data-e="${x.id}">수정</button> <button class="sb" data-d="${x.id}">삭제</button></td></tr>`).join('')||'<tr><td>등록된 시공사례가 없습니다.</td></tr>'}
-$('#cth').onclick=e=>{const b=e.target.closest('[data-rm]');if(b){rm.add(+b.dataset.rm);b.parentElement.remove()}};
-$('#cc').onclick=()=>{EC=null;fillCases()};
-$('#cf').onsubmit=async e=>{e.preventDefault();const f=e.target,m=$('#cm'),c=EC||{};m.textContent='이미지 업로드 중…';
- try{let cover=c.cover_path,old=[];if(f.elements.cover.files[0]){if(cover)old.push(cover);cover=await up(f.elements.cover.files[0])}if(!cover)throw new Error('대표 이미지를 선택하세요.');
-  const keep=(c.images||[]).filter((_,i)=>!rm.has(i));old.push(...(c.images||[]).filter((_,i)=>rm.has(i)));for(const file of f.elements.imgs.files)keep.push(await up(file));
-  const row={title:f.elements.title.value.trim(),region:f.elements.region.value.trim(),area:f.elements.area.value.trim(),period:f.elements.period.value.trim(),category:f.elements.category.value,description:f.elements.description.value.trim(),cover_path:cover,images:keep};
+function fillCase(){const e=$('#caseForm').elements,c=EC||{};['title','region','period','area','description'].forEach(k=>e[k].value=c[k]||'');e.category.value=c.category||'아파트';e.cover.value='';e.imgs.value='';rmImgs=new Set();
+ $('#caseHead').textContent=EC?'시공사례 수정':'시공사례 등록';$('#caseSave').textContent=EC?'수정 저장':'등록';$('#caseCancel').style.display=EC?'inline-block':'none';
+ $('#caseThumbs').innerHTML=(c.images||[]).map((x,i)=>`<span><img src="${img(x)}" alt=""><button type="button" data-rm="${i}">×</button></span>`).join('');
+ $('#caseList').innerHTML=CASES.map(x=>`<tr><td>${fd(x.created_at)}</td><td>${esc(x.title)}</td><td>${esc(x.region)}</td><td><button class="sb" data-e="${x.id}">수정</button> <button class="sb" data-d="${x.id}">삭제</button></td></tr>`).join('')||'<tr><td>등록된 시공사례가 없습니다.</td></tr>'}
+$('#caseThumbs').onclick=e=>{const b=e.target.closest('[data-rm]');if(b){rmImgs.add(+b.dataset.rm);b.parentElement.remove()}};
+$('#caseCancel').onclick=()=>{EC=null;fillCase()};
+$('#caseForm').onsubmit=async ev=>{ev.preventDefault();const e=ev.target.elements,m=$('#caseMsg'),c=EC||{};m.textContent='이미지 업로드 중…';
+ try{let cover=c.cover_path,old=[];if(e.cover.files[0]){if(cover)old.push(cover);cover=await up(e.cover.files[0])}if(!cover)throw new Error('대표 이미지를 선택하세요.');
+  const keep=(c.images||[]).filter((_,i)=>!rmImgs.has(i));old.push(...(c.images||[]).filter((_,i)=>rmImgs.has(i)));for(const f of e.imgs.files)keep.push(await up(f));
+  const row={title:e.title.value.trim(),region:e.region.value.trim(),area:e.area.value.trim(),period:e.period.value.trim(),category:e.category.value,description:e.description.value.trim(),cover_path:cover,images:keep};
   const r=EC?await sb.from('cases').update(row).eq('id',c.id):await sb.from('cases').insert(row);if(r.error)throw r.error;await delImgs(old);
-  const was=EC;EC=null;await loadCases();fillCases();$('#cm').textContent=was?'수정되었습니다.':'등록되었습니다. 시공사례 페이지에 바로 반영되었습니다.'}catch(x){m.textContent='오류: '+(x.message||x)}};
-$('#cl').onclick=async e=>{const b=e.target.closest('button');if(!b)return;
- if(b.dataset.e){EC=CASES.find(y=>y.id===b.dataset.e);fillCases();scrollTo(0,0)}
- else if(b.dataset.d){const x=CASES.find(y=>y.id===b.dataset.d);if(!confirm(`'${x.title}' 시공사례를 삭제할까요?`))return;const r=await sb.from('cases').delete().eq('id',x.id);if(r.error)return alert(r.error.message);await delImgs([x.cover_path,...(x.images||[])]);await loadCases();fillCases()}};
-/* 공지 → notices */
-async function fillNotices(){const{data}=await sb.from('notices').select('*').order('created_at',{ascending:false});NL=data||[];const f=$('#nf'),n=EN||{};f.elements.title.value=n.title||'';f.elements.body.value=n.body||'';$('#nh').textContent=EN?'공지 수정':'공지 작성';$('#ns').textContent=EN?'수정 저장':'등록';$('#nc').hidden=!EN;
- $('#nl').innerHTML=NL.map(x=>`<tr><td>${fd(x.created_at)}</td><td>${esc(x.title)}</td><td><button class="sb" data-e="${x.id}">수정</button> <button class="sb" data-d="${x.id}">삭제</button></td></tr>`).join('')||'<tr><td>등록된 공지가 없습니다.</td></tr>'}
-$('#nc').onclick=()=>{EN=null;fillNotices()};
-$('#nf').onsubmit=async e=>{e.preventDefault();const f=e.target,row={title:f.elements.title.value.trim(),body:f.elements.body.value.trim(),updated_at:new Date().toISOString()};const r=EN?await sb.from('notices').update(row).eq('id',EN.id):await sb.from('notices').insert(row);if(r.error)return alert(r.error.message);EN=null;await loadNotices();fillNotices()};
-$('#nl').onclick=async e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.e){EN=NL.find(x=>x.id===b.dataset.e);fillNotices();scrollTo(0,0)}else if(b.dataset.d&&confirm('삭제할까요?')){await sb.from('notices').delete().eq('id',b.dataset.d);await loadNotices();fillNotices()}};
-/* 후기 → reviews */
+  const was=EC;EC=null;await loadCases();fillCase();$('#caseMsg').textContent=was?'수정되었습니다.':'등록되었습니다. 시공사례 페이지에 바로 반영되었습니다.'}catch(x){m.textContent='오류: '+(x.message||x)}};
+$('#caseList').onclick=async e=>{const b=e.target.closest('button');if(!b)return;
+ if(b.dataset.e){EC=CASES.find(y=>y.id===b.dataset.e);fillCase();$('#adminRoot').scrollTop=0}
+ else if(b.dataset.d){const x=CASES.find(y=>y.id===b.dataset.d);if(!confirm(`'${x.title}' 시공사례를 삭제할까요?`))return;const r=await sb.from('cases').delete().eq('id',x.id);if(r.error)return alert(r.error.message);await delImgs([x.cover_path,...(x.images||[])]);await loadCases();fillCase()}};
+
+/* ③ 공지사항 → notices */
+async function fillNotices(){const{data}=await sb.from('notices').select('*').order('created_at',{ascending:false});NL=data||[];const e=$('#noticeForm').elements,n=EN||{};e.title.value=n.title||'';e.body.value=n.body||'';
+ $('#noticeHead').textContent=EN?'공지 수정':'공지 작성';$('#noticeSave').textContent=EN?'수정 저장':'등록';$('#noticeCancel').style.display=EN?'inline-block':'none';
+ $('#noticeList').innerHTML=NL.map(x=>`<tr><td>${fd(x.created_at)}</td><td>${esc(x.title)}</td><td><button class="sb" data-e="${x.id}">수정</button> <button class="sb" data-d="${x.id}">삭제</button></td></tr>`).join('')||'<tr><td>등록된 공지가 없습니다.</td></tr>'}
+$('#noticeCancel').onclick=()=>{EN=null;fillNotices()};
+$('#noticeForm').onsubmit=async ev=>{ev.preventDefault();const e=ev.target.elements,m=$('#noticeMsg'),row={title:e.title.value.trim(),body:e.body.value.trim(),updated_at:new Date().toISOString()};
+ const r=EN?await sb.from('notices').update(row).eq('id',EN.id):await sb.from('notices').insert(row);if(r.error){m.textContent='오류: '+r.error.message;return}
+ EN=null;m.textContent='저장되었습니다. 메인 공지사항에 반영되었습니다.';await loadNotices();fillNotices()};
+$('#noticeList').onclick=async e=>{const b=e.target.closest('button');if(!b)return;
+ if(b.dataset.e){EN=NL.find(x=>x.id===b.dataset.e);fillNotices();$('#adminRoot').scrollTop=0}
+ else if(b.dataset.d&&confirm('삭제할까요?')){await sb.from('notices').delete().eq('id',b.dataset.d);await loadNotices();fillNotices()}};
+
+/* ④ 후기 → reviews (author · rating · content · visible) */
+const stars=n=>'★'.repeat(n||5)+'☆'.repeat(5-(n||5));
 async function fillReviews(){const{data}=await sb.from('reviews').select('*').order('created_at',{ascending:false});RL=data||[];
- $('#rl').innerHTML=RL.map(x=>`<tr><td>${fd(x.created_at)}</td><td style="white-space:normal;min-width:200px">${esc(x.content)}<br><small>${esc(x.author)}</small></td><td><button class="sb" data-v="${x.id}">${x.visible?'숨기기':'공개하기'}</button> <button class="sb" data-d="${x.id}">삭제</button></td></tr>`).join('')||'<tr><td>등록된 후기가 없습니다.</td></tr>'}
-$('#rf').onsubmit=async e=>{e.preventDefault();const f=e.target,r=await sb.from('reviews').insert({author:f.elements.author.value.trim(),content:f.elements.content.value.trim()});if(r.error)return alert(r.error.message);f.reset();await loadReviews();fillReviews()};
-$('#rl').onclick=async e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.v){const x=RL.find(y=>y.id===b.dataset.v);await sb.from('reviews').update({visible:!x.visible}).eq('id',x.id)}else if(b.dataset.d&&confirm('삭제할까요?'))await sb.from('reviews').delete().eq('id',b.dataset.d);await loadReviews();fillReviews()};
+ $('#reviewList').innerHTML=RL.map(x=>`<tr><td>${fd(x.created_at)}</td><td style="white-space:normal;min-width:180px"><span style="color:var(--gold)">${stars(x.rating)}</span><br>${esc(x.content)}<br><small>${esc(x.author)}</small></td><td><button class="sb" data-v="${x.id}">${x.visible?'숨기기':'공개하기'}</button> <button class="sb" data-d="${x.id}">삭제</button></td></tr>`).join('')||'<tr><td>등록된 후기가 없습니다.</td></tr>'}
+$('#reviewForm').onsubmit=async ev=>{ev.preventDefault();const f=ev.target,e=f.elements,m=$('#reviewMsg');
+ const r=await sb.from('reviews').insert({author:e.author.value.trim(),rating:+e.rating.value,content:e.content.value.trim()});if(r.error){m.textContent='오류: '+r.error.message+colErr(r.error.message);return}
+ f.reset();m.textContent='등록되었습니다. 고객 후기에 반영되었습니다.';await loadReviews();fillReviews()};
+$('#reviewList').onclick=async e=>{const b=e.target.closest('button');if(!b)return;
+ if(b.dataset.v){const x=RL.find(y=>y.id===b.dataset.v);await sb.from('reviews').update({visible:!x.visible}).eq('id',x.id)}
+ else if(b.dataset.d&&confirm('삭제할까요?'))await sb.from('reviews').delete().eq('id',b.dataset.d);
+ await loadReviews();fillReviews()};
 
 /* [6] 확장 훅: 나중에 EXT.push({mount:'#ext-home',render:async()=>'<section>…</section>'}) 만 추가하면 됨
    예) 트렌드 카드, 쿠팡 파트너스, 네이버 기사, 뉴스. 각 항목은 새 테이블 + 새 render 함수로 독립 추가 */
 const EXT=[];const runExt=()=>EXT.forEach(async x=>{const m=$(x.mount);if(m)m.innerHTML=await x.render()});
 
 /* 라우팅 (관리자 화면은 is_admin 확인 후에만 표시, 아니면 홈으로) */
-function route(){const h=(location.hash||'#home').slice(1);let id=$('#'+h)?.classList.contains('page')?h:'home';
+function route(){const h=(location.hash||'#home').slice(1);let id=(h==='admin'||$('#'+h)?.classList.contains('page'))?h:'home';
  if(id==='admin'&&!ADM){id='home';history.replaceState(null,'','#home')}
+ $('#adminRoot').hidden=id!=='admin';document.body.style.overflow=id==='admin'?'hidden':'';
  $$('.page').forEach(p=>p.classList.toggle('on',p.id===id));$$('nav a').forEach(a=>a.classList.toggle('on',a.hash==='#'+id));$('#nav').classList.remove('open');
  if(id==='me')drawMe();if(id==='admin')drawAdmin();if(h!=='feed')scrollTo(0,0)}
 addEventListener('hashchange',route);$('#mb').onclick=()=>$('#nav').classList.toggle('open');
