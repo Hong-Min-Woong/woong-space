@@ -11,9 +11,11 @@
     editNotice: null, removedImages: new Set(), activeTab: 'about',
     adminReturnFocus: null, adminOverflow: '', failures: new Map(),
     aboutDefaults: {}, historyDefaults: [], siteReady: false, siteLoadPromise: null,
-    authResolved: false, adminOpenedByHash: false
+    authResolved: false, adminOpenedByHash: false,
+    route: 'home', homeCaseIndex: 0, homeCaseTimer: null, homeCasePaused: false
   };
   const tabPanes = { about: 'adminAbout', cases: 'adminCases', notices: 'adminNotices', reviews: 'adminReviews' };
+  const routeTitles = { home: '웅 Space | 우리 동네 믿을 수 있는 턴키 인테리어', gallery: '시공사례 | 웅 Space', about: '회사소개 | 웅 Space', reviews: '고객후기 | 웅 Space', trend: '인테리어 트렌드 | 웅 Space', notice: '공지사항 | 웅 Space' };
   const aboutKeys = ['intro', 'greeting', 'philosophy', 'vision'];
   const aboutIds = { intro: 'aboutIntro', greeting: 'aboutGreeting', philosophy: 'aboutPhilosophy', vision: 'aboutVision' };
 
@@ -275,8 +277,68 @@
   function drawCases() {
     const rows = state.cases.slice(0, 6);
     replace('casesGrid', ...rows.map(caseCard));
+    drawHomeCases();
     message('casesStatus', rows.length ? '' : '등록된 시공사례가 없습니다.');
     if (state.admin) drawCaseList();
+  }
+
+  function setHomeCaseIndex(index) {
+    const slides = [...(ids('homeCaseSlides')?.querySelectorAll('.home-case-slide') || [])];
+    if (!slides.length) return;
+    state.homeCaseIndex = (index + slides.length) % slides.length;
+    slides.forEach((slide, position) => { slide.hidden = position !== state.homeCaseIndex; });
+    ids('homeCaseDots')?.querySelectorAll('button[data-slide-index]').forEach(dot => {
+      const current = Number(dot.dataset.slideIndex) === state.homeCaseIndex;
+      dot.setAttribute('aria-current', String(current));
+      dot.setAttribute('aria-pressed', String(current));
+    });
+  }
+  function stopHomeCaseAutoplay() {
+    if (state.homeCaseTimer) window.clearInterval(state.homeCaseTimer);
+    state.homeCaseTimer = null;
+  }
+  function syncHomeCaseAutoplay() {
+    stopHomeCaseAutoplay();
+    const count = ids('homeCaseSlides')?.querySelectorAll('.home-case-slide').length || 0;
+    const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    if (state.route === 'home' && !state.homeCasePaused && count > 1 && !reducedMotion) {
+      state.homeCaseTimer = window.setInterval(() => setHomeCaseIndex(state.homeCaseIndex + 1), 6000);
+    }
+  }
+  function drawHomeCases() {
+    const rows = state.cases.slice(0, 4);
+    const slides = rows.map((item, index) => {
+      const title = str(item.title) || '시공사례';
+      const slide = el('button', 'home-case-slide');
+      slide.type = 'button'; slide.dataset.caseId = str(item.id);
+      slide.setAttribute('aria-label', `${title} 시공사례 자세히 보기`);
+      const image = createImage(item.cover_path || imagesOf(item)[0], title, 'home-case-image');
+      if (image) slide.append(image); else appendText(slide, 'span', 'home-case-image-placeholder', 'WOONG SPACE');
+      const shade = el('span', 'home-case-shade'); shade.setAttribute('aria-hidden', 'true');
+      const copy = el('span', 'home-case-copy');
+      appendText(copy, 'span', 'home-case-tag', [item.category, item.region].filter(Boolean).join(' · ') || 'WOONG SPACE PROJECT');
+      appendText(copy, 'span', 'home-case-title', title);
+      appendText(copy, 'span', 'home-case-meta', [item.area, item.period].filter(Boolean).join(' · ') || '웅 Space 시공사례');
+      appendText(copy, 'span', 'home-case-open', '사례 자세히 보기  ↗');
+      slide.append(shade, copy); slide.hidden = index !== state.homeCaseIndex;
+      return slide;
+    });
+    if (slides.length) replace('homeCaseSlides', ...slides);
+    else replace('homeCaseSlides', el('p', 'empty', '등록된 시공사례가 없습니다.'));
+    const dots = rows.map((item, index) => {
+      const dot = el('button', 'carousel-dot', String(index + 1));
+      dot.type = 'button'; dot.dataset.slideIndex = String(index);
+      dot.setAttribute('aria-label', `${index + 1}번 시공사례: ${str(item.title) || '시공사례'}`);
+      dot.setAttribute('aria-current', String(index === state.homeCaseIndex));
+      dot.setAttribute('aria-pressed', String(index === state.homeCaseIndex));
+      return dot;
+    });
+    replace('homeCaseDots', ...dots);
+    const controls = ids('homeCaseControls'); if (controls) controls.hidden = rows.length < 2;
+    setHomeCaseIndex(state.homeCaseIndex);
+    const toggle = ids('homeCaseToggle');
+    if (toggle) { toggle.textContent = state.homeCasePaused ? '자동 넘김 시작' : '자동 넘김 멈춤'; toggle.setAttribute('aria-pressed', String(state.homeCasePaused)); }
+    syncHomeCaseAutoplay();
   }
   async function loadCases() {
     message('casesStatus', '시공사례를 불러오는 중입니다.');
@@ -449,6 +511,31 @@
     state.adminOpenedByHash = false;
     if (state.adminReturnFocus?.isConnected) state.adminReturnFocus.focus();
     state.adminReturnFocus = null;
+  }
+  function routeFromHash() {
+    const route = location.hash.replace(/^#/, '');
+    return Object.hasOwn(routeTitles, route) ? route : 'home';
+  }
+  function showRoute(route, scroll = true) {
+    if (!Object.hasOwn(routeTitles, route)) route = 'home';
+    state.route = route;
+    document.querySelectorAll('[data-route-view]').forEach(view => {
+      const active = view.dataset.routeView === route;
+      view.hidden = !active;
+      if (active) { view.classList.remove('page-transition'); void view.offsetWidth; view.classList.add('page-transition'); }
+    });
+    document.querySelectorAll('[data-route-link]').forEach(link => {
+      if (link.dataset.routeLink === route) link.setAttribute('aria-current', 'page');
+      else link.removeAttribute('aria-current');
+    });
+    document.title = routeTitles[route];
+    if (scroll) window.scrollTo(0, 0);
+    syncHomeCaseAutoplay();
+  }
+  function handlePageLocation() {
+    if (location.hash === '#admin') { handleAdminHash(); return; }
+    showRoute(routeFromHash());
+    handleAdminHash();
   }
   function handleAdminHash() {
     if (location.hash !== '#admin') {
@@ -754,10 +841,23 @@
       ids('siteNav')?.classList.remove('open'); ids('mobileMenuButton')?.setAttribute('aria-expanded', 'false');
     });
     on('casesGrid', 'click', event => { const b = event.target.closest('button[data-case-id]'); if (b) openCase(b.dataset.caseId); });
+    on('homeCaseSlides', 'click', event => { const b = event.target.closest('button[data-case-id]'); if (b) openCase(b.dataset.caseId); });
+    on('homeCasePrev', 'click', () => setHomeCaseIndex(state.homeCaseIndex - 1));
+    on('homeCaseNext', 'click', () => setHomeCaseIndex(state.homeCaseIndex + 1));
+    on('homeCaseDots', 'click', event => {
+      const dot = event.target.closest('button[data-slide-index]');
+      if (dot) setHomeCaseIndex(Number(dot.dataset.slideIndex));
+    });
+    on('homeCaseToggle', 'click', () => {
+      state.homeCasePaused = !state.homeCasePaused;
+      const toggle = ids('homeCaseToggle');
+      if (toggle) { toggle.textContent = state.homeCasePaused ? '자동 넘김 시작' : '자동 넘김 멈춤'; toggle.setAttribute('aria-pressed', String(state.homeCasePaused)); }
+      syncHomeCaseAutoplay();
+    });
     on('caseDialogContent', 'click', event => { if (event.target.closest('[data-action="close-case"]')) closeDialog(ids('caseDialog')); });
     asyncOn('adminLink', 'click', event => { event.preventDefault(); return openAdmin(); }, 'connectionStatus');
     on('adClose', 'click', closeAdmin);
-    window.addEventListener('hashchange', handleAdminHash);
+    window.addEventListener('hashchange', handlePageLocation);
     on('adTabs', 'click', event => {
       const b = event.target.closest('button[data-tab]');
       if (b && Object.hasOwn(tabPanes, b.dataset.tab)) showAdminTab(b.dataset.tab);
@@ -782,6 +882,8 @@
   async function init() {
     captureAboutDefaults(); bindEvents(); drawAuth(); showAdminTab('about');
     if (location.pathname.replace(/\/+$/, '') === '/admin') history.replaceState(null, '', '/#admin');
+    if (!location.hash) history.replaceState(null, '', `${location.pathname}${location.search}#home`);
+    showRoute(routeFromHash(), false);
     setBusy(aboutSubmit(), true);
     message('casesStatus', '시공사례를 불러오는 중입니다.');
     setStatusPlaceholder('reviewsGrid', '후기를 불러오는 중입니다.');
