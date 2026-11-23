@@ -347,6 +347,27 @@
     } catch (error) { setStatusPlaceholder('reviewsGrid', errorText('후기를 불러오지 못했습니다', error)); connection('후기', error); return false; }
   }
 
+  async function submitPublicReview(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const submit = ids('publicReviewSubmit');
+    if (val(form, 'website')) { form.reset(); message('publicReviewMsg', '후기가 접수되었습니다. 운영자 확인 후 공개됩니다.'); return; }
+    const row = { author: val(form, 'author'), rating: Number(val(form, 'rating')), content: val(form, 'content'), visible: false };
+    if (!row.author || row.author.length > 100) { message('publicReviewMsg', '표시 이름을 1~100자 이내로 입력해 주세요.', true); return; }
+    if (!row.content || row.content.length > 2000) { message('publicReviewMsg', '후기를 1~2,000자 이내로 입력해 주세요.', true); return; }
+    if (!Number.isInteger(row.rating) || row.rating < 1 || row.rating > 5) { message('publicReviewMsg', '별점은 1점부터 5점까지 선택해 주세요.', true); return; }
+    setBusy(submit, true); message('publicReviewMsg', '후기를 접수하고 있습니다.');
+    try {
+      checked(await requireDB().from('reviews').insert(row));
+      form.reset();
+      message('publicReviewMsg', '후기가 접수되었습니다. 운영자 확인 후 공개됩니다.');
+      if (state.admin) await loadAdminReviews();
+    } catch (error) {
+      const denied = error && (error.code === '42501' || /row-level security|permission denied/i.test(str(error.message)));
+      message('publicReviewMsg', denied ? '후기 접수 권한을 확인할 수 없습니다. 잠시 후 다시 시도해 주세요.' : '후기를 접수하지 못했습니다. 잠시 후 다시 시도해 주세요.', true);
+    } finally { setBusy(submit, false); }
+  }
+
   /* Authentication: defer Supabase calls outside the auth callback to avoid its lock. */
   function drawAuth() {
     const login = ids('loginButton'), logout = ids('logoutButton'), admin = ids('adminLink');
@@ -756,6 +777,7 @@
     asyncOn('noticeListAdmin', 'click', noticeListAction, 'noticeMsg');
     asyncOn('reviewForm', 'submit', saveReview, 'reviewMsg');
     asyncOn('reviewListAdmin', 'click', reviewListAction, 'reviewMsg');
+    asyncOn('publicReviewForm', 'submit', submitPublicReview, 'publicReviewMsg');
   }
   async function init() {
     captureAboutDefaults(); bindEvents(); drawAuth(); showAdminTab('about');
